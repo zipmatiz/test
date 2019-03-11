@@ -1,0 +1,6 @@
+{
+  "vcenter_address": "server.domain.local",
+  "vcenter_username": "administrator@vsphere.local",
+  "vcenter_password": "Password",
+  "ssh_pass": "Linux root password"
+}

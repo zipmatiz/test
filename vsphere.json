@@ -1,0 +1,87 @@
+{
+  "builders": [
+    {
+      "type": "vsphere-iso",
+
+      "vcenter_server": "{{ user `vcenter_address` }}",
+      "insecure_connection": "true",
+      "username": "{{ user `vcenter_username` }}",
+      "password": "{{ user `vcenter_password` }}",
+      "cluster": "Main",
+      "host": "esxi-0.corp.local",
+
+      "vm_version": 14,
+      "vm_name":  "centos7-vsphere-packer4",
+      "convert_to_template": "true",
+      "folder": "Templates",
+      "cpus": "4",
+      "ram": "4096",
+      "network": "172 Network",
+      "network_card": "vmxnet3",
+      "guest_os_type": "centos7_64Guest",
+      "datastore": "1TB SSD",
+      "disk_size": "50000",
+      "disk_thin_provisioned": true,
+      "iso_urls": [ "/home/mkadmin/CentOS-7-x86_64-DVD-1810.iso" ],
+      "iso_paths": [ "[NFS-FreeNAS] CentOS-7-x86_64-DVD-1810.iso" ],
+      "iso_checksum_type": "sha256",
+      "iso_checksum": "6d44331cc4f6c506c7bbe9feb8468fad6c51a88ca1393ca6b8b486ea04bec3c1",
+      "communicator": "ssh",
+      "ssh_username": "root",
+      "ssh_password": "{{ user `ssh_pass` }}",
+
+      "boot_wait": "10s",
+      "boot_command": [
+         "<tab>inst.text inst.ks=hd:fd0:/ks.cfg<enter><wait>"
+      ],
+      "floppy_files": [ "ks.cfg" ]
+
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "expect_disconnect": true,
+      "inline": [
+	"systemctl stop rsyslog",
+	"logrotate -f /etc/logrotate.conf",
+        "echo logrotate",
+  	"rm -f /var/log/*-????????",
+        "echo varlog1",
+        "rm -f /var/log/*.gz",
+        "echo varlog2",
+ 	"rm -f /var/log/dmesg.old",
+        "echo varlogdmesg",
+ 	"rm -rf /var/log/anaconda",
+        "echo varloganaconda",
+        "cat /dev/null > /var/log/audit/audit.log",
+        "echo devnull1",
+        "cat /dev/null > /var/log/wtmp",
+        "echo devnull2",
+        "cat /dev/null > /var/log/lastlog",
+        "echo devnull31",
+        "cat /dev/null > /var/log/grubby",
+        "echo grubby1",
+        "sed -i '/^UUID/d' /etc/sysconfig/network-scripts/ifcfg-e*",
+        "echo sed",
+        "rm -rf /var/tmp/*",
+        "echo rmvartmp",
+        "rm -rf /tmp/*",
+        "echo rmtmp",
+        "rm -f /etc/ssh/*key*",
+        "echo rmkey",
+        "rm -f /root/.bash_history",
+        "echo rmbashhistory",
+ 	"rm -f /home/mkadmin/.bash_history",
+        "echo rmmkadminbashhistory",
+        "rm -f /root/anaconda-ks.cf",
+        "echo 1",
+        "history -c",
+        "echo 1",
+        "unset HISTFILE",
+  	"sys-unconfig"
+      ]
+    }
+  ]
+}
+

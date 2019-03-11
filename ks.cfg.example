@@ -1,0 +1,82 @@
+#version=DEVEL
+# System authorization information
+auth --enableshadow --passalgo=sha512
+# Use CDROM installation media
+cdrom
+# Use graphical install
+graphical
+# Run the Setup Agent on first boot
+firstboot --enable
+ignoredisk --only-use=sda
+# Keyboard layouts
+keyboard --vckeymap=gb --xlayouts='gb'
+# System language
+lang en_GB.UTF-8
+
+# Network information
+network  --bootproto=dhcp --device=ens160 --ipv6=auto --activate
+network  --hostname=localhost.localdomain
+
+# Root password
+rootpw --iscrypted << CRYPTED PASSWORD >>
+# System services
+services --enabled="chronyd"
+# System timezone
+timezone Europe/London --isUtc
+user --groups=wheel --name=<< ROOT USER >> --password=<< CRYPTED PASSWORD >> --iscrypted --gecos=<< USER NAME? >>
+# System bootloader configuration
+bootloader --append=" crashkernel=auto" --location=mbr --boot-drive=sda
+# Partition clearing information
+clearpart --none --initlabel
+# Disk partitioning information
+part pv.313 --fstype="lvmpv" --ondisk=sda --size=30207
+part /boot --fstype="xfs" --ondisk=sda --size=512
+volgroup centos --pesize=4096 pv.313
+logvol /  --fstype="xfs" --size=17398 --name=root --vgname=centos
+logvol /var/log/audit  --fstype="xfs" --size=512 --name=var_log_audit --vgname=centos
+logvol /var  --fstype="xfs" --size=1024 --name=var --vgname=centos
+logvol /home  --fstype="xfs" --size=1024 --name=home --vgname=centos
+logvol /tmp  --fstype="xfs" --size=5120 --name=tmp --vgname=centos
+logvol swap  --fstype="swap" --size=2048 --name=swap --vgname=centos
+logvol /var/tmp  --fstype="xfs" --size=1024 --name=var_tmp --vgname=centos
+logvol /var/log  --fstype="xfs" --size=1024 --name=var_log --vgname=centos
+
+reboot
+
+%packages
+@^infrastructure-server-environment
+@base
+@core
+@guest-agents
+chrony
+kexec-tools
+
+%end
+
+%addon com_redhat_kdump --enable --reserve-mb='auto'
+
+%end
+
+%post
+
+mkdir -p -m 0700 /home/<< ROOT USER >>/.ssh
+
+cat <<EOF >/home/<< ROOT USER >>/.ssh/authorized_keys
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCnqfZUWQXix0BJZgNTj3niV9Pi1bKbdde8sBX5S5YAyTMNAIam8UnUYzOhhQyKrWHWU0zbeQNNadZ52yexKMtiixEbd73amIo9yP8KF5Jpifyn5pIWNuLVLBB+25mPUHml5i1NYCrzZwkifqvlBbOqoLavI8d29fxnIWFCTQV1diN6QY5IlJSPlz277V3rhfKWuBDTKyHqPKTyCTAhtqlcYS7mpdKBIZB2lF9eAGZMmgl3w7IgFWG2K9f2GxwHU23pygkOLO7qlaR0rZ847564739zsINKWru96bw80er8M/qnVXRU1CPnwXZF4CyWRLNUmYDzA2vpSEkjHKfEyVgsr user@host
+EOF
+
+chown << ROOT USER >>:<< ROOT USER >> /home/<< ROOT USER >>/.ssh
+chown << ROOT USER >>:<< ROOT USER >> /home/<< ROOT USER >>/.ssh/authorized_keys
+chmod 0600 /home/mkadmin/authorized_keys
+echo "%wheel  ALL=(ALL)       NOPASSWD: ALL" >> /etc/sudoers
+
+restorecon -R /home/mkadmin/.ssh
+
+%end
+
+%anaconda
+pwpolicy root --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+pwpolicy user --minlen=6 --minquality=1 --notstrict --nochanges --emptyok
+pwpolicy luks --minlen=6 --minquality=1 --notstrict --nochanges --notempty
+%end
+
